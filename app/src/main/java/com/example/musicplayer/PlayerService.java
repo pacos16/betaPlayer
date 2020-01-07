@@ -11,6 +11,11 @@ import android.os.PowerManager;
 import androidx.annotation.Nullable;
 
 import com.example.musicplayer.model.Playlist;
+import com.example.musicplayer.model.Song;
+
+import java.io.IOException;
+import java.net.MalformedURLException;
+
 
 public class PlayerService extends Service implements MediaPlayer.OnPreparedListener,
         MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
@@ -21,6 +26,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     private IBinder iBinder;
     private Handler handler;
     private boolean isPaused;
+    private int position;
 
     @Override
     public void onCreate() {
@@ -59,7 +65,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-
+        nextSong();
     }
 
     @Override
@@ -69,11 +75,14 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-
+        mp.start();
     }
 
     public void setPlaylist(Playlist playlist) {
         this.playlist = playlist;
+    }
+    public void setPosition(int position){
+        this.position=position;
     }
 
     public class LocalBinder extends Binder{
@@ -82,5 +91,42 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         }
     }
 
+    public void previousSong(){
+        position--;
+        if(position<0) position=playlist.getSongs().size()-1;
+        play();
+    }
+    public void play(){
+        if(isPaused){
+            player.start();
+            isPaused=false;
+        }else {
+            player.reset();
+            try {
+                player.setDataSource(playlist.getSongs().get(position).getPath());
+                player.prepareAsync();
 
+            } catch (MalformedURLException murle){
+
+            }catch (IOException ioe){
+
+            }
+        }
+    }
+    public void pause(){
+        player.pause();
+        isPaused=true;
+    }
+    public void nextSong(){
+        position++;
+        if (position==playlist.getSongs().size()) position=0;
+        play();
+    }
+
+    public Song getSong(){
+        return playlist.getSongs().get(position);
+    }
+    public void stop(){
+        stopSelf();
+    }
 }

@@ -18,8 +18,8 @@ import com.example.musicplayer.model.Song;
 import java.util.ArrayList;
 
 public class FragmentSongs extends Fragment implements ISongListener {
-    private final String PLAYLIST_EXTRA= "com.pacosignes.playlist_extra";
-    private final String POSITION_EXTRA= "com.pacosignes.position_extra";
+    public static final String PLAYLIST_EXTRA= "com.pacosignes.playlist_extra";
+    public static final String POSITION_EXTRA= "com.pacosignes.position_extra";
     private Playlist playlist;
     private ArrayList<Song> songs;
     private RecyclerView recyclerView;
@@ -46,16 +46,41 @@ public class FragmentSongs extends Fragment implements ISongListener {
 
 
     public void setPlaylist(Playlist playlist){
+        this.playlist=playlist;
         this.songs=playlist.getSongs();
     }
 
     @Override
     public void onSelectedSong(Playlist p, int position) {
+
+        /*
         Intent playerIntent=new Intent(this.getContext(),Player.class);
         Bundle bundle=new Bundle();
         bundle.putSerializable(PLAYLIST_EXTRA,playlist);
         bundle.putInt(POSITION_EXTRA,position);
         playerIntent.putExtras(bundle);
-        startActivity(playerIntent);
+        getActivity().startActivity(playerIntent);
+         */
+
+        boolean fragmentActivo=false;
+        for (Fragment f:getActivity().getSupportFragmentManager().getFragments()
+             ) {
+            if(f instanceof FragmentPlayer){
+                ((FragmentPlayer) f).stopPlayer();
+                ((FragmentPlayer) f).setSongAttributtes(playlist,position);
+                getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.content_frame,f).commit();
+                fragmentActivo=true;
+            }
+        }
+
+        if(!fragmentActivo){
+            FragmentPlayer fragmentPlayer=new FragmentPlayer();
+            fragmentPlayer.setSongAttributtes(playlist,position);
+            getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.content_frame,fragmentPlayer).commit();
+
+        }
+
+
+
     }
 }

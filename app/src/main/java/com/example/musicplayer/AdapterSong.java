@@ -32,7 +32,7 @@ public class AdapterSong extends RecyclerView.Adapter<AdapterSong.SongViewHolder
     @Override
     public SongViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view= LayoutInflater.from(parent.getContext()).inflate(R.layout.listitem_song,parent,false);
-        return new SongViewHolder(view);
+        return new SongViewHolder(view,listener);
     }
 
     @Override
@@ -49,17 +49,20 @@ public class AdapterSong extends RecyclerView.Adapter<AdapterSong.SongViewHolder
 
     public class SongViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
 
+
         private TextView tvName;
         private TextView tvData;
         private ImageView imgSong;
         private Song song;
+        private ISongListener listener;
 
 
-        public SongViewHolder(@NonNull View itemView) {
+        public SongViewHolder(@NonNull View itemView,ISongListener listener) {
             super(itemView);
-
+            this.listener=listener;
             tvName=itemView.findViewById(R.id.tvSongName);
             tvData=itemView.findViewById(R.id.tvSongData);
+            itemView.setOnClickListener(this);
         }
 
         public void bind(Song s){

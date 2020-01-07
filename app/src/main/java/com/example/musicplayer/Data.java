@@ -31,8 +31,6 @@ public class Data {
     }
 
 
-
-
     public void loadSongs(){
 
         Uri uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
@@ -58,7 +56,7 @@ public class Data {
 
     private void createInitialPlaylist(){
         this.playlists=new ArrayList<>();
-        playlists.add(new Playlist(songs,"All Songs"));
+        playlists.add(new Playlist(this.songs,"All Songs"));
 
     }
 
