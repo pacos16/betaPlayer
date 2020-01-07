@@ -1,49 +1,45 @@
 package com.example.musicplayer;
 
 import android.app.Service;
-import android.content.Context;
+
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Binder;
-import android.os.Handler;
+
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
 
 import com.example.musicplayer.model.Playlist;
 import com.example.musicplayer.model.Song;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+
 
 
 public class PlayerService extends Service implements MediaPlayer.OnPreparedListener,
-        MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
+        MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener  {
 
     public static final String TAG= "com.pacosignes.PlayerService";
     private MediaPlayer player;
     private Playlist playlist;
     private IBinder iBinder;
-    private Handler handler;
     private boolean isPaused;
     private int position;
-    private Context context;
     private int duration;
+    private IDuracion listener;
 
     @Override
     public void onCreate() {
         super.onCreate();
         iBinder=new LocalBinder();
         player=new MediaPlayer();
-        handler=new Handler();
         isPaused=false;
-        context=this;
+
     }
 
     @Override
@@ -53,26 +49,15 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         player.setOnCompletionListener(this);
         player.setOnErrorListener(this);
 
-        ScheduledExecutorService s=Executors.newSingleThreadScheduledExecutor();
-        MyTask task=new MyTask();
-        s.scheduleAtFixedRate(task,0,200, TimeUnit.MILLISECONDS);
-
         return START_NOT_STICKY;
     }
-
-    public class MyTask implements Runnable{
-
-        @Override
-        public void run() {
-            if(player.isPlaying()){
-                Intent i=new Intent();
-                i.setAction(TAG);
-                i.putExtra("com.pacosignes.TIME_MILIS",player.getCurrentPosition());
-                LocalBroadcastManager.getInstance(context).sendBroadcast(i);
-            }
-        }
+    public void seekTo(int position){
+        player.seekTo(position);
     }
 
+    public int getCurrentPosition(){
+        return player.getCurrentPosition();
+    }
     @Override
     public void onDestroy() {
         super.onDestroy();
@@ -105,6 +90,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     public void onPrepared(MediaPlayer mp) {
         mp.start();
         duration=mp.getDuration();
+        listener.setDuracion(mp.getDuration());
     }
 
     public void setPlaylistAndPosition(Playlist p,int position){
@@ -176,5 +162,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     public int getDuration(){
         return duration;
     }
-
+    public void setIDuracionListener(IDuracion listener){
+        this.listener=listener;
+    }
 }

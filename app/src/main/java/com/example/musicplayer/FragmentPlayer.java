@@ -1,14 +1,17 @@
 package com.example.musicplayer;
 
 import android.app.ActivityManager;
-import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
+
 import android.content.ServiceConnection;
 import android.os.Bundle;
+
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,12 +22,15 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.example.musicplayer.model.Playlist;
 import com.example.musicplayer.model.Song;
 
-public class FragmentPlayer extends Fragment {
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+public class FragmentPlayer extends Fragment implements IDuracion {
 
     private ImageButton btPlayPause;
     private ImageButton btPrevious;
@@ -39,7 +45,8 @@ public class FragmentPlayer extends Fragment {
     private int position;
     private int duration;
     private int milis;
-    private LocalBroadcastManager lbm;
+    private Handler handler;
+    private FragmentPlayer fplayer;
 
     @Nullable
     @Override
@@ -60,8 +67,8 @@ public class FragmentPlayer extends Fragment {
         btMinimize=getActivity().findViewById(R.id.ibMinimize);
         actualizar(playlist.getSongs().get(position));
         isPaused=false;
-        lbm = LocalBroadcastManager.getInstance(this.getActivity());
-        lbm.registerReceiver(receiver, new IntentFilter(PlayerService.TAG));
+        handler=new Handler();
+        fplayer=this;
 
         btMinimize.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -115,7 +122,31 @@ public class FragmentPlayer extends Fragment {
         else {
             getActivity().bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE);
         }
-        seekBar.setMax(duration);
+
+
+
+        ScheduledExecutorService s= Executors.newSingleThreadScheduledExecutor();
+        MyTask task=new MyTask();
+        s.scheduleAtFixedRate(task,0,200, TimeUnit.MILLISECONDS);
+
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser){
+                    playerService.seekTo(progress);
+                }
+
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                seekBar.setProgress(playerService.getCurrentPosition());
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                seekBar.setProgress(playerService.getCurrentPosition());
+            }
+        });
     }
 
     public boolean isMyServiceRunning(Class<?> serviceClass) {
@@ -136,15 +167,15 @@ public class FragmentPlayer extends Fragment {
             playerService=binder.getService();
             playerService.setPlaylistAndPosition(playlist,position);
             isPaused = !playerService.isPlaying();
-
             playerService.changeSong();
-            duration=playerService.getDuration();
+            playerService.setIDuracionListener(fplayer);
+            seekBar.setProgress(0);
 
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            lbm.unregisterReceiver(receiver);
+
         }
 
     };
@@ -164,22 +195,33 @@ public class FragmentPlayer extends Fragment {
             btPlayPause.setImageResource(R.drawable.baseline_pause_circle_filled_black_18dp);
         }
     }
-
-    public BroadcastReceiver receiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            if (intent != null && intent.getAction().equals(PlayerService.TAG)) {
-                milis=intent.getIntExtra("com.pacosignes.TIME_MILIS",0);
-                seekBar.setProgress(milis);
-            }
-        }
-    };
-
-
     public void stopPlayer(){
 
         if(playerService!=null)playerService.stop();
     }
 
+    public class MyTask implements Runnable{
+
+        @Override
+        public void run() {
+
+                if(playerService!=null) {
+                    milis = playerService.getCurrentPosition();
+                    seekBar.setProgress(milis);
+                    handler.post(this);
+                }
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        playerService.stopService();
+    }
+
+    @Override
+    public void setDuracion(int i) {
+        duration=i;
+        seekBar.setMax(duration);
+    }
 }

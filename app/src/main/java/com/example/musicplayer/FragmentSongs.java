@@ -55,4 +55,6 @@ public class FragmentSongs extends Fragment implements ISongListener {
             fragmentPlayer.setSongAttributtes(playlist,position);
             getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.content_frame,fragmentPlayer).commit();
     }
+
+
 }
