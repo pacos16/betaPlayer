@@ -1,6 +1,5 @@
 package com.example.musicplayer;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -52,35 +51,8 @@ public class FragmentSongs extends Fragment implements ISongListener {
 
     @Override
     public void onSelectedSong(Playlist p, int position) {
-
-        /*
-        Intent playerIntent=new Intent(this.getContext(),Player.class);
-        Bundle bundle=new Bundle();
-        bundle.putSerializable(PLAYLIST_EXTRA,playlist);
-        bundle.putInt(POSITION_EXTRA,position);
-        playerIntent.putExtras(bundle);
-        getActivity().startActivity(playerIntent);
-         */
-
-        boolean fragmentActivo=false;
-        for (Fragment f:getActivity().getSupportFragmentManager().getFragments()
-             ) {
-            if(f instanceof FragmentPlayer){
-                ((FragmentPlayer) f).stopPlayer();
-                ((FragmentPlayer) f).setSongAttributtes(playlist,position);
-                getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.content_frame,f).commit();
-                fragmentActivo=true;
-            }
-        }
-
-        if(!fragmentActivo){
             FragmentPlayer fragmentPlayer=new FragmentPlayer();
             fragmentPlayer.setSongAttributtes(playlist,position);
             getActivity().getSupportFragmentManager().beginTransaction().replace(R.id.content_frame,fragmentPlayer).commit();
-
-        }
-
-
-
     }
 }

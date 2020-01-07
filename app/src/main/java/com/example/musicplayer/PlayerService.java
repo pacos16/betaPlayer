@@ -1,32 +1,40 @@
 package com.example.musicplayer;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.example.musicplayer.model.Playlist;
 import com.example.musicplayer.model.Song;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 
 public class PlayerService extends Service implements MediaPlayer.OnPreparedListener,
         MediaPlayer.OnCompletionListener, MediaPlayer.OnErrorListener {
 
-    private static final String TAG= "com.pacosignes.PlayerService";
+    public static final String TAG= "com.pacosignes.PlayerService";
     private MediaPlayer player;
     private Playlist playlist;
     private IBinder iBinder;
     private Handler handler;
     private boolean isPaused;
     private int position;
+    private Context context;
+    private int duration;
 
     @Override
     public void onCreate() {
@@ -35,6 +43,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         player=new MediaPlayer();
         handler=new Handler();
         isPaused=false;
+        context=this;
     }
 
     @Override
@@ -44,12 +53,30 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         player.setOnCompletionListener(this);
         player.setOnErrorListener(this);
 
+        ScheduledExecutorService s=Executors.newSingleThreadScheduledExecutor();
+        MyTask task=new MyTask();
+        s.scheduleAtFixedRate(task,0,200, TimeUnit.MILLISECONDS);
+
         return START_NOT_STICKY;
+    }
+
+    public class MyTask implements Runnable{
+
+        @Override
+        public void run() {
+            if(player.isPlaying()){
+                Intent i=new Intent();
+                i.setAction(TAG);
+                i.putExtra("com.pacosignes.TIME_MILIS",player.getCurrentPosition());
+                LocalBroadcastManager.getInstance(context).sendBroadcast(i);
+            }
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+
     }
 
     @Override
@@ -65,7 +92,8 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
 
     @Override
     public void onCompletion(MediaPlayer mp) {
-        nextSong();
+        Log.i("omg","wtf");
+        //nextSong();
     }
 
     @Override
@@ -76,13 +104,14 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     @Override
     public void onPrepared(MediaPlayer mp) {
         mp.start();
+        duration=mp.getDuration();
     }
 
-    public void setPlaylist(Playlist playlist) {
-        this.playlist = playlist;
-    }
-    public void setPosition(int position){
+    public void setPlaylistAndPosition(Playlist p,int position){
+        this.playlist=p;
         this.position=position;
+
+
     }
 
     public class LocalBinder extends Binder{
@@ -94,25 +123,33 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     public void previousSong(){
         position--;
         if(position<0) position=playlist.getSongs().size()-1;
-        play();
+
+        changeSong();
     }
-    public void play(){
+
+    public void resume(){
         if(isPaused){
             player.start();
             isPaused=false;
-        }else {
-            player.reset();
-            try {
-                player.setDataSource(playlist.getSongs().get(position).getPath());
-                player.prepareAsync();
-
-            } catch (MalformedURLException murle){
-
-            }catch (IOException ioe){
-
-            }
         }
+
     }
+
+    public void changeSong(){
+        player.reset();
+        try {
+            player.setDataSource(playlist.getSongs().get(position).getPath());
+            player.prepareAsync();
+            isPaused=false;
+
+        } catch (MalformedURLException murle){
+
+        }catch (IOException ioe){
+
+        }
+
+    }
+
     public void pause(){
         player.pause();
         isPaused=true;
@@ -120,13 +157,24 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     public void nextSong(){
         position++;
         if (position==playlist.getSongs().size()) position=0;
-        play();
+        changeSong();
     }
 
     public Song getSong(){
         return playlist.getSongs().get(position);
     }
-    public void stop(){
+    public void stopService(){
+
         stopSelf();
     }
+    public void stop(){
+        player.stop();
+    }
+    public boolean isPlaying(){
+        return player.isPlaying();
+    }
+    public int getDuration(){
+        return duration;
+    }
+
 }

@@ -13,18 +13,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.musicplayer.model.Playlist;
 import com.example.musicplayer.model.Song;
 
-import java.util.ArrayList;
+
 
 public class AdapterSong extends RecyclerView.Adapter<AdapterSong.SongViewHolder> {
     private Context context;
-    private ArrayList<Song> songs;
+
     private ISongListener listener;
     private Playlist playlist;
 
     public AdapterSong(Context context, Playlist playlist, ISongListener listener) {
         this.context = context;
         this.playlist=playlist;
-        this.songs = playlist.getSongs();
         this.listener=listener;
     }
 
@@ -38,13 +37,13 @@ public class AdapterSong extends RecyclerView.Adapter<AdapterSong.SongViewHolder
     @Override
     public void onBindViewHolder(@NonNull SongViewHolder holder, int position) {
 
-        holder.bind(songs.get(position));
+        holder.bind(playlist.getSongs().get(position));
 
     }
 
     @Override
     public int getItemCount() {
-        return songs.size();
+        return playlist.getSongs().size();
     }
 
     public class SongViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
